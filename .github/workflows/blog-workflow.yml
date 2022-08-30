@@ -1,0 +1,50 @@
+name: "My Hexo Blog Workflow"
+
+on: [push]
+
+env:
+  TZ: 'Asia/Taipei'
+
+jobs:
+  build:
+    name: Hexo Build Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Hexo Blog Source"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Setup Node JS v16"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: "Install Dependencies via Yarn"
+        run: yarn
+      - name: "Test Build Site"
+        run: yarn run build
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-hexo-blog-artifact
+          path: ./public
+          retention-days: 1
+  deploy:
+    name: Deploy Blog
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Download Artifact"
+        uses: actions/download-artifact@v3
+        with:
+          name: my-hexo-blog-artifact
+          path: ./public
+      - name: "Push Public To Another Repository"
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        with:
+          source-directory: 'public'
+          destination-github-username: 'tico88612'
+          destination-repository-name: 'cicd-hexo-blog-pages'
+          user-email: 41898282+github-actions[bot]@users.noreply.github.com
+          target-branch: main
